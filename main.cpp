@@ -4,6 +4,7 @@
 #include "BodyTracker.hh"
 #include "GlassTracker.hh"
 #include "utils.hpp"
+#include "GLViewer.hpp"
 
 #include <boost/asio.hpp>
 
@@ -125,12 +126,23 @@ int main(int argc, char** argv)
         BT->Set_CameraPose(camera_init_pose[sn]);
         BT->Open();
 
+        GLViewer viewer;
+        sl::CameraParameters param = BT->Get_CameraParameters();
+        viewer.init(argc, argv, param);
         while (!exit_app)
         {
             BT->Run();
             string poses = BT->Get_Pose_As_String(); // head, body data (meter)
             socket.send_to(boost::asio::buffer(poses), *endpoints.begin());
-        }   
+
+            sl::Transform  cam_pose = BT->Get_CameraPose_SL();
+            sl::Objects    cam_objects = BT->Get_Objects();
+            sl::Bodies     cam_bodies = BT->Get_Bodies();
+            sl::Mat        cam_pointCloud = BT->Get_PointCloud();
+            viewer.updateData(cam_pose, cam_objects, cam_bodies, cam_pointCloud);
+            viewer.isAvailable();
+        }
+        viewer.exit();
         delete BT;
     };
 

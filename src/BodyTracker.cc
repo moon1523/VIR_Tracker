@@ -103,6 +103,7 @@ void BodyTracker::Run()
     }
     zed.retrieveBodies(bodies, body_runtime_parameters, body_tracking_parameters.instance_module_id);
     transformBodies(cam_pose, bodies);
+    zed.retrieveMeasure(point_cloud, sl::MEASURE::XYZRGBA, sl::MEM::GPU, sl::Resolution(1280, 720));
 }
 
 void BodyTracker::transformObjects(const Eigen::Affine3f& cam_pose, sl::Objects& camera_objects)

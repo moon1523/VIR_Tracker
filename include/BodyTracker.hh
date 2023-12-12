@@ -28,7 +28,23 @@ public:
     void Set_CornerView(string sn) { cornerView = stoi(sn); }
     void Set_Monitor_TopView(string sn) { monitor_topView = stoi(sn); }
     void Set_Monitor_BotView(string sn) { monitor_botView = stoi(sn); }
-    void Set_CameraPose(const Eigen::Affine3f& pose) { cam_pose = pose; }
+    void Set_CameraPose(const Eigen::Affine3f& pose) { 
+        cam_pose = pose;
+        Eigen::Vector3f T = pose.translation();
+        Eigen::Quaternionf Q = Eigen::Quaternionf( pose.rotation() ); Q.normalize();
+        sl::float3 T_sl(T.x(), T.y(), T.z());
+        sl::float4 Q_sl(Q.x(), Q.y(), Q.z(), Q.w());
+        cam_pose_sl.setTranslation(T_sl);
+        cam_pose_sl.setOrientation(Q_sl);
+    }
+    sl::CameraParameters Get_CameraParameters() { 
+        return zed.getCameraInformation().camera_configuration.calibration_parameters.left_cam; 
+    }
+
+    sl::Transform Get_CameraPose_SL() { return cam_pose_sl; }
+    sl::Objects   Get_Objects()       { return objects; }
+    sl::Bodies    Get_Bodies()        { return bodies; }
+    sl::Mat       Get_PointCloud()    { return point_cloud; }
 
     string Get_Pose_As_String() {
         string str;
@@ -67,9 +83,12 @@ private:
     cv::Mat cameraMatrix;
     cv::Mat distCoeffs;
 
+    Eigen::Affine3f cam_pose;
+    sl::Transform cam_pose_sl;
     sl::Bodies bodies;
     sl::Objects objects;
-    Eigen::Affine3f cam_pose;
+    sl::Mat point_cloud;
+    
 };
 
 #endif
