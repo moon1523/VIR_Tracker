@@ -10,9 +10,32 @@
 #include <Eigen/Sparse>
 #include <Eigen/Geometry>
 
-using namespace std;
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
 
+using namespace std;
 typedef vector< tuple<string, float, Eigen::Vector3f> > FACEINFO; // name, similiarity, xyz
+
+// namespace boost {
+// namespace serialization {
+// template<class Archive>
+// void serialize(Archive & ar, Eigen::Vector3f& v, const unsigned int version)
+// {
+//     ar & v.x();
+//     ar & v.y();
+//     ar & v.z();
+// }
+// // tuple
+// template<class Archive, typename... Args>
+// void serialize(Archive & ar, tuple<Args...>& t, const unsigned int version)
+// {
+//     ar & get<0>(t);
+//     ar & get<1>(t);
+//     ar & get<2>(t);
+// }
+// } // namespace serialization
+// } // namespace boost
 
 class FaceDetector
 {
@@ -38,14 +61,22 @@ class FaceDetector
     string Get_FaceInfo_as_String() 
     {
       string str;
+      str = "face\n";
       for (auto it: face_info) {
         str += get<0>(it) + " " + to_string(get<1>(it)) + " " 
             + to_string(get<2>(it).x()) + " " 
             + to_string(get<2>(it).y()) + " " 
-            + to_string(get<2>(it).z()) + " ";
+            + to_string(get<2>(it).z()) + "\n";
       }
       return str;
     }
+
+    // template<class Archive>
+    // void serialize(Archive & ar, const unsigned int version)
+    // {
+    //     ar & face_info;
+    // }
+
   
   private:
     void Import_Modules();
@@ -66,7 +97,7 @@ class FaceDetector
     Eigen::Affine3f A_wcam;
     string record_file;
     map<int, FACEINFO> frameData_faceInfo;
-
+    
 };
 
 

@@ -12,25 +12,37 @@ BodyTracker::BodyTracker(string sn)
 {
     // check serial number
     vector<sl::DeviceProperties> devices = sl::Camera::getDeviceList();
+
+    bool isFind(false);
     for (auto z: devices) {
         if (stoi(sn) == z.serial_number) {
             zed_sn = z.serial_number;
             zed_id = z.id;
+            isFind = true;
             break;
         }
     }
-    cout << "Seleted zed sn (id): " << zed_sn << " (" << zed_id << ")" << endl;
+    if (!isFind) {
+        cout << "sn you need: " << sn << endl;
+        cout << "connected sn list" << endl;
+        for (auto z: devices) cout << z.serial_number << endl;
+        exit(1);
+    }
 }
 
 BodyTracker::~BodyTracker()
 {
     zed.close();
-
-
 }
 
 bool BodyTracker::Open()
 {
+    cout << "Seleted zed sn (id): " << zed_sn << " (" << zed_id << ")" << endl;
+    zed_sn2name[ceiling] = "ceiling";
+    zed_sn2name[corner] = "corner";
+    zed_sn2name[monitor_top] = "monitor_top";
+    zed_sn2name[monitor_bot] = "monitor_bot";
+
     // open the camera
     init_parameters.input.setFromCameraID(zed_id);
     init_parameters.camera_resolution = sl::RESOLUTION::HD720;
@@ -97,50 +109,79 @@ void BodyTracker::Run()
     sl::Pose pose;
     if (zed.grab() != sl::ERROR_CODE::SUCCESS)
         return;
-    if (zed_sn == topView) {
+    if (zed_sn == ceiling || zed_sn == corner) {
         zed.retrieveObjects(objects, object_detection_runtime_parameters, object_detection_parameters.instance_module_id);
-        transformObjects(cam_pose, objects);
+        filteringObjects(objects);
     }
     zed.retrieveBodies(bodies, body_runtime_parameters, body_tracking_parameters.instance_module_id);
-    transformBodies(cam_pose, bodies);
+    filteringBodies(bodies);
     zed.retrieveMeasure(point_cloud, sl::MEASURE::XYZRGBA, sl::MEM::GPU, sl::Resolution(1280, 720));
 }
 
-void BodyTracker::transformObjects(const Eigen::Affine3f& cam_pose, sl::Objects& camera_objects)
-{
-    for (auto &head : camera_objects.object_list)
-    {
-        Eigen::Vector3f head_tf = cam_pose * Eigen::Vector3f(head.head_position.x, head.head_position.y, head.head_position.z);
-        head.head_position.x = head_tf.x();
-        head.head_position.y = head_tf.y();
-        head.head_position.z = head_tf.z();
-
-        for (auto &bb : head.head_bounding_box)
-        {
-            Eigen::Vector3f bb_tf = cam_pose * Eigen::Vector3f(bb.x, bb.y, bb.z);
-            bb.x = bb_tf.x();
-            bb.y = bb_tf.y();
-            bb.z = bb_tf.z();
+void BodyTracker::filteringObjects(sl::Objects& camera_objects)
+{    
+    for (auto it = camera_objects.object_list.begin(); it != camera_objects.object_list.end(); ) {
+        sl::float3 center; float edge1, edge2, edge3;
+        bboxInfo(it->head_bounding_box, center, edge1, edge2, edge3);
+        it->position = center;
+        // 1. check tracking state
+        if (it->tracking_state != sl::OBJECT_TRACKING_STATE::OK) {
+            it = camera_objects.object_list.erase(it);
+        }
+        // 2. check speed
+        else if (it->velocity.norm() > 1.5) {
+            it = camera_objects.object_list.erase(it);
+        }
+        // 3. check bounding box size
+        else if (it->head_bounding_box.size() != 8) {
+            it = camera_objects.object_list.erase(it);
+        }
+        // 4. check bounding box
+        else if (edge1 < 0.1 || edge1 > 0.3 ||
+                 edge2 < 0.1 || edge2 > 0.3 ||
+                 edge3 < 0.1 || edge3 > 0.3) {
+            it = camera_objects.object_list.erase(it);
+        }
+        else {
+            it++;
         }
     }
 }
-void BodyTracker::transformBodies(const Eigen::Affine3f& cam_pose, sl::Bodies& camera_bodies)
+
+void BodyTracker::filteringBodies(sl::Bodies& camera_bodies)
 {
-    for (auto &body : camera_bodies.body_list)
-    {
-        for (auto &kpt : body.keypoint)
-        {
-            Eigen::Vector3f kpt_tf = cam_pose * Eigen::Vector3f(kpt.x, kpt.y, kpt.z);
-            kpt.x = kpt_tf.x();
-            kpt.y = kpt_tf.y();
-            kpt.z = kpt_tf.z();
+    for (auto it = camera_bodies.body_list.begin(); it != camera_bodies.body_list.end(); ) {
+        sl::float3 center; float edge1, edge2, edge3;
+        bboxInfo(it->bounding_box, center, edge1, edge2, edge3);
+        it->position = center;
+        // 1. check tracking state
+        if (it->tracking_state != sl::OBJECT_TRACKING_STATE::OK) {
+            it = camera_bodies.body_list.erase(it);
         }
-        for (auto &pt : body.bounding_box)
-        {
-            Eigen::Vector3f pt_tf = cam_pose * Eigen::Vector3f(pt.x, pt.y, pt.z);
-            pt.x = pt_tf.x();
-            pt.y = pt_tf.y();
-            pt.z = pt_tf.z();
+        // 2. check speed
+        else if (it->velocity.norm() > 1.5) {
+            it = camera_bodies.body_list.erase(it);
+        }
+        // 3. check neck-head length
+        else if ( (it->keypoint[26] - it->keypoint[3]).norm() > 0.3f ) {
+            it = camera_bodies.body_list.erase(it);
+        }
+        else {
+            it++;
         }
     }
+}
+
+void BodyTracker::bboxInfo(const std::vector<sl::float3>& bbox, sl::float3& center, float& edge1, float& edge2, float& edge3)
+{
+    //    1 ------ 2
+    //   /        /|
+    //  0 ------ 3 |
+    //  | Object | 6
+    //  |        |/
+    //  4 ------ 7
+    center = (bbox[0] + bbox[1] + bbox[2] + bbox[3] + bbox[4] + bbox[5] + bbox[6] + bbox[7]) * 0.125f;
+    edge1 = (bbox[0] - bbox[1]).norm();
+    edge2 = (bbox[0] - bbox[3]).norm();
+    edge3 = (bbox[0] - bbox[4]).norm();
 }

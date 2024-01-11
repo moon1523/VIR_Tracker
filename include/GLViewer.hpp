@@ -273,10 +273,9 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    void init(int argc, char **argv, sl::CameraParameters& param);
+    void init(int argc, char **argv);
 
-    void updateData(sl::Transform& _cam_pose,
-                    sl::Objects&   _cam_objects,
+    void updateData(sl::Objects&   _cam_objects,
                     sl::Bodies&    _cam_bodies,
                     sl::Mat&       _cam_pointCloud);
     unsigned char getKey() {
@@ -360,7 +359,7 @@ private:
     
     // NEW
     std::vector<ObjectClassName> objectsName;
-    Simple3DObject frustum;
+    // Simple3DObject frustum;
     // std::map<int,Simple3DObject> frustums;
     Simple3DObject reference_frame;
     PointCloud pointCloud;

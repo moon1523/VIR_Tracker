@@ -127,12 +127,11 @@ PyRun_SimpleString(
 "for line in output_lines:\n"
 "    if 'APC930' in line:\n"
 "        found_index = True\n"
-"    if 'UHD2160' in line:\n"
-"        found_index = True\n"
+"        continue\n"
 "    elif found_index:\n"
 "        camera_index = int(line[-1])\n"
 "        break\n"
-"cap = cv2.VideoCapture(camera_index, )\n"
+"cap = cv2.VideoCapture(camera_index, cv2.CAP_V4L2)\n"
 "cap.set(cv2.CAP_PROP_FPS, 15)\n"
 "cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))\n"
 "cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)\n"
@@ -247,6 +246,7 @@ PyRun_SimpleString(
 
 string load_model = 
 "model_file = '" + train_model + "'\n"
+"print(model_file)\n"
 "num = " + num_workers + "\n"
 "threshold = 0.99\n";
 // set id from vector<string> member_id

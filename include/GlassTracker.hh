@@ -73,8 +73,9 @@ public:
     string Get_Glass_Pose_as_String() {
         Eigen::Vector3f t = A_glass.translation();
         Eigen::Quaternionf q = Eigen::Quaternionf(A_glass.rotation());
-        string str = to_string(t.x()) + " " + to_string(t.y()) + " " + to_string(t.z()) + " " +
-                     to_string(q.x()) + " " + to_string(q.y()) + " " + to_string(q.z()) + " " + to_string(q.w());
+        string str = "glass\n";
+        str += to_string(t.x()) + " " + to_string(t.y()) + " " + to_string(t.z()) + " " +
+               to_string(q.x()) + " " + to_string(q.y()) + " " + to_string(q.z()) + " " + to_string(q.w());
         return str;
     }
 

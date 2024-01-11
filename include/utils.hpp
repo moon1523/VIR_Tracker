@@ -83,7 +83,7 @@ static int findCameraIndex()
   pclose(pipe);
   stringstream ss(device_list);
   string line, dump;
-  int cam_id;
+  int cam_id(-1);
   while (ss >> dump) {      
     if (dump == "Azure") {
         getline(ss, line);

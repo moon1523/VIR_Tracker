@@ -24,22 +24,10 @@ public:
     bool Open();
     void Run();
 
-    void Set_TopView(string sn) { topView = stoi(sn); }
-    void Set_CornerView(string sn) { cornerView = stoi(sn); }
-    void Set_Monitor_TopView(string sn) { monitor_topView = stoi(sn); }
-    void Set_Monitor_BotView(string sn) { monitor_botView = stoi(sn); }
-    void Set_CameraPose(const Eigen::Affine3f& pose) { 
-        cam_pose = pose;
-        Eigen::Vector3f T = pose.translation();
-        Eigen::Quaternionf Q = Eigen::Quaternionf( pose.rotation() ); Q.normalize();
-        sl::float3 T_sl(T.x(), T.y(), T.z());
-        sl::float4 Q_sl(Q.x(), Q.y(), Q.z(), Q.w());
-        cam_pose_sl.setTranslation(T_sl);
-        cam_pose_sl.setOrientation(Q_sl);
-    }
-    sl::CameraParameters Get_CameraParameters() { 
-        return zed.getCameraInformation().camera_configuration.calibration_parameters.left_cam; 
-    }
+    void Set_ceiling(string sn) { ceiling = stoi(sn); }
+    void Set_corner(string sn) { corner = stoi(sn); }
+    void Set_monitor_top(string sn) { monitor_top = stoi(sn); }
+    void Set_monitor_bot(string sn) { monitor_bot = stoi(sn); }
 
     sl::Transform Get_CameraPose_SL() { return cam_pose_sl; }
     sl::Objects   Get_Objects()       { return objects; }
@@ -48,30 +36,34 @@ public:
 
     string Get_Pose_As_String() {
         string str;
-        if (zed_sn == topView) {
+        str += zed_sn2name[zed_sn] + "\n";
+        if (zed_sn == ceiling || zed_sn == corner) {
             for (auto &head : objects.object_list) {
                 str += "head_id " + to_string(head.id) + "\n";
-                str += to_string(head.head_position.x) + " " + to_string(head.head_position.y) + " " + to_string(head.head_position.z) + "\n";
+                str += to_string(head.position.x) + " " + to_string(head.position.y) + " " + to_string(head.position.z) + " " + to_string(head.confidence*0.01) + "\n";
             }
         }
         for (auto &body : bodies.body_list) {
             str += "body_id " + to_string(body.id) + "\n";
+            int count = 0;
             for (auto &kpt : body.keypoint) {
-                str += to_string(kpt.x) + " " + to_string(kpt.y) + " " + to_string(kpt.z) + "\n";
+                str += to_string(kpt.x) + " " + to_string(kpt.y) + " " + to_string(kpt.z) + " " + to_string(body.keypoint_confidence[count++]*0.01) + "\n";
             }
         }
         return str;
     }
 
 private:
-    void transformObjects(const Eigen::Affine3f& cam_pose, sl::Objects& camera_objects);
-    void transformBodies(const Eigen::Affine3f& cam_pose, sl::Bodies& camera_bodies);
+    void filteringObjects(sl::Objects& camera_objects);
+    void filteringBodies(sl::Bodies& camera_bodies);
+    void bboxInfo(const std::vector<sl::float3>& bbox, sl::float3& center, float& edge1, float& edge2, float& edge3);
 
     int zed_id, zed_sn;
-    int topView;
-    int cornerView;
-    int monitor_topView;
-    int monitor_botView;
+    map<int, string> zed_sn2name;
+    int ceiling;
+    int corner;
+    int monitor_top;
+    int monitor_bot;
 
     sl::Camera zed;
     sl::InitParameters init_parameters;

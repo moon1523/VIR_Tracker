@@ -178,7 +178,7 @@ void CloseFunc(void) {
         currentInstance_->exit();
 }
 
-void GLViewer::init(int argc, char **argv, sl::CameraParameters& param) {
+void GLViewer::init(int argc, char **argv) {
 
     glutInit(&argc, argv);
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
@@ -210,10 +210,11 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters& param) {
     shaderLine.MVP_Mat = glGetUniformLocation(shaderLine.it.getProgramId(), "u_mvpMatrix");
      
     // Create the camera
-    camera_ = CameraGL(sl::Translation(0, 0, 5), sl::Translation(0, 0, -1));
+    // camera_ = CameraGL(sl::Translation(0, 0, 5), sl::Translation(0, 0, 1));
+    camera_ = CameraGL(sl::Translation(0, 0, 0), sl::Translation(0, 0, 1));
     
-    frustum = createFrustum(param);
-    frustum.pushToGPU();
+    // frustum = createFrustum(param);
+    // frustum.pushToGPU();
 
     // Bounding Box
     BBox_edges = Simple3DObject(sl::Translation(0, 0, 0), false);
@@ -363,8 +364,7 @@ void GLViewer::addSKeleton(sl::BodyData& obj, Simple3DObject& simpleObj, sl::flo
     }
 }
 
-void GLViewer::updateData(sl::Transform& _cam_pose,
-                          sl::Objects&   _cam_objects,
+void GLViewer::updateData(sl::Objects&   _cam_objects,
                           sl::Bodies&    _cam_bodies,
                           sl::Mat&       _cam_pointCloud)
 {
@@ -389,10 +389,10 @@ void GLViewer::updateData(sl::Transform& _cam_pose,
     pointCloud.pushNewPC(_cam_pointCloud);
     
     // Camera Poses
-    cam_pose = _cam_pose;
-    frustum.setRT(_cam_pose);
-    sl::float3 pos = _cam_pose.getTranslation();
-    createIDRendering(pos, sl::float4(1.f, 1.f, 0.f, 1.0f), 0);
+    // cam_pose = _cam_pose;
+    // frustum.setRT(_cam_pose);
+    // sl::float3 pos = _cam_pose.getTranslation();
+    // createIDRendering(pos, sl::float4(1.f, 1.f, 0.f, 1.0f), 0);
 
 
     // Camera Bodies
@@ -498,9 +498,9 @@ void GLViewer::draw() {
     // camera frustum
     glLineWidth(2.f);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glUniformMatrix4fv(shaderLine.MVP_Mat, 1, GL_TRUE, (vpMatrix * cam_pose).m );
+    glUniformMatrix4fv(shaderLine.MVP_Mat, 1, GL_TRUE, (vpMatrix).m );
     // glUniformMatrix4fv(shaderLine.MVP_Mat, 1, GL_TRUE, vpMatrix.m );
-    frustum.draw();
+    // frustum.draw();
 
     // reference coordinate
     glLineWidth(5.f);
@@ -516,7 +516,7 @@ void GLViewer::draw() {
     
     
     // point cloud
-    pointCloud.draw(vpMatrix * cam_pose);
+    pointCloud.draw(vpMatrix);
 
     glUseProgram(0);
     glDisable(GL_DEPTH_TEST);
