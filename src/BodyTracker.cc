@@ -174,6 +174,7 @@ void BodyTracker::filteringBodies(sl::Bodies& camera_bodies)
 
 void BodyTracker::bboxInfo(const std::vector<sl::float3>& bbox, sl::float3& center, float& edge1, float& edge2, float& edge3)
 {
+    if (bbox.size() != 8) return;
     //    1 ------ 2
     //   /        /|
     //  0 ------ 3 |

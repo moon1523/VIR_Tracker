@@ -83,10 +83,10 @@ void FaceDetector::Run(bool isView)
 "            cv2.rectangle(img, (det[0], det[1]), (det[2], det[3]), text_color, 2)\n"
 "            img = cv2.putText(img, text, (text_x, text_y), font, font_scale, text_color, text_thickness, cv2.LINE_AA)\n"
 "            cv2.imshow(\"webcam_view\", img)\n"
+"            cv2.waitKey(1)\n";
 "    else:\n"
 "        cv2.imshow(\"webcam_view\", img)\n"
-"    cv2.waitKey(1)\n";
-// "    cv2.imwrite(\"" + to_string(frameNo++) + ".jpg\", img)\n";
+"        cv2.waitKey(1)\n";
     }
     PyRun_SimpleString(run.c_str());
     PyObject* pList  = PyDict_GetItemString(global_dict, "id_list");
@@ -126,11 +126,16 @@ PyRun_SimpleString(
 "found_index = False\n"
 "for line in output_lines:\n"
 "    if 'APC930' in line:\n"
+"        print(\"apc930\")\n"
 "        found_index = True\n"
 "        continue\n"
-"    elif found_index:\n"
+"    if found_index == True:\n"
 "        camera_index = int(line[-1])\n"
 "        break\n"
+"\n"
+"if found_index == False:\n"
+"    sys.exit(1)\n"
+"print(camera_index)\n"
 "cap = cv2.VideoCapture(camera_index, cv2.CAP_V4L2)\n"
 "cap.set(cv2.CAP_PROP_FPS, 15)\n"
 "cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))\n"

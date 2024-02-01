@@ -10,32 +10,9 @@
 #include <Eigen/Sparse>
 #include <Eigen/Geometry>
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-
 using namespace std;
 typedef vector< tuple<string, float, Eigen::Vector3f> > FACEINFO; // name, similiarity, xyz
 
-// namespace boost {
-// namespace serialization {
-// template<class Archive>
-// void serialize(Archive & ar, Eigen::Vector3f& v, const unsigned int version)
-// {
-//     ar & v.x();
-//     ar & v.y();
-//     ar & v.z();
-// }
-// // tuple
-// template<class Archive, typename... Args>
-// void serialize(Archive & ar, tuple<Args...>& t, const unsigned int version)
-// {
-//     ar & get<0>(t);
-//     ar & get<1>(t);
-//     ar & get<2>(t);
-// }
-// } // namespace serialization
-// } // namespace boost
 
 class FaceDetector
 {

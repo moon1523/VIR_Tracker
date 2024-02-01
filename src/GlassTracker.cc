@@ -159,7 +159,7 @@ bool GlassTracker::Run(cv::Mat &image)
 
         A_glass.linear() = q_current.normalized().toRotationMatrix();
         A_glass.translation() = t_current * 0.01; // cm to meter
-        A_glass = A_viewCam * A_glass;
+        // A_glass = A_viewCam * A_glass;
     }
     else
     {
